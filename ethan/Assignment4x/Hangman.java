@@ -22,7 +22,7 @@ public class Hangman extends ConsoleProgram {
 		lexicon = new HangmanLexicon();
 		String word = lexicon.getWord((int) (Math.random() * lexicon.getWordCount()));
 
-		// Convert the word into the dashd version.
+		// Convert the word into the dashed version.
 		String dashWord = "";
 		for (int i = 0; i < word.length(); i++)
 			dashWord += '-';
@@ -63,6 +63,7 @@ public class Hangman extends ConsoleProgram {
 			}
 		}
 		if (dashesLeft == 0) {
+			canvas.displayWord(word);
 			println("You guessed the word: " + word);
 			println("You win.");
 		} else {

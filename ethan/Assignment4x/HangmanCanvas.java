@@ -4,21 +4,16 @@
  * This file keeps track of the Hangman display.
  */
 
+import java.util.Iterator;
+
 import acm.graphics.*;
 
 public class HangmanCanvas extends GCanvas {
 
-	GLabel wordLabel;
-	String guesses;
-	GLabel guessesLabel;
-	GObject head;
-	GObject body;
-	GObject leftArm;
-	GObject rightArm;
-	GObject leftLeg;
-	GObject rightLeg;
-	GObject leftFoot;
-	GObject rightFoot;
+	private GLabel wordLabel;
+	private String guesses;
+	private GLabel guessesLabel;
+	private GCompound body;
 
 	/** Resets the display so that only the scaffold appears */
 	public void reset() {
@@ -26,10 +21,13 @@ public class HangmanCanvas extends GCanvas {
 		add(new GLine(MARGIN, MARGIN, MARGIN, MARGIN + SCAFFOLD_HEIGHT));
 		add(new GLine(MARGIN, MARGIN, MARGIN + BEAM_LENGTH, MARGIN));
 		add(new GLine(MARGIN + BEAM_LENGTH, MARGIN, MARGIN + BEAM_LENGTH, MARGIN + ROPE_LENGTH));
+		body = new GCompound();
+		body.setLocation(MARGIN + BEAM_LENGTH, MARGIN + ROPE_LENGTH);
+		add(body);
 		wordLabel = new GLabel("");
 		wordLabel.setFont("*-bold-18");
 		add(wordLabel);
-		guesses = new String();
+		guesses = "";
 		guessesLabel = new GLabel(guesses);
 		add(guessesLabel);
 	}
@@ -41,7 +39,7 @@ public class HangmanCanvas extends GCanvas {
 	 */
 	public void displayWord(String word) {
 		wordLabel.setLabel(word);
-		wordLabel.setLocation((getWidth() - wordLabel.getWidth() - MARGIN * 2) / 2, MARGIN + SCAFFOLD_HEIGHT + WORD_SPACING);
+		wordLabel.setLocation((getWidth() - wordLabel.getWidth()) / 2, MARGIN + SCAFFOLD_HEIGHT + WORD_SPACING);
 	}
 
 	/**
@@ -53,47 +51,78 @@ public class HangmanCanvas extends GCanvas {
 	public void noteIncorrectGuess(char letter) {
 		guesses += letter;
 		guessesLabel.setLabel(guesses);
-		guessesLabel.setLocation((getWidth() - guessesLabel.getWidth() - MARGIN * 2) / 2, wordLabel.getY() + wordLabel.getHeight()
+		guessesLabel.setLocation((getWidth() - guessesLabel.getWidth()) / 2, wordLabel.getY() + wordLabel.getHeight()
 				+ WORD_SPACING);
-		if (guesses.length() >= 1 && head == null)
-			add(head = new GOval(MARGIN + BEAM_LENGTH - HEAD_RADIUS, MARGIN + ROPE_LENGTH, HEAD_RADIUS * 2, HEAD_RADIUS * 2));
-		if (guesses.length() >= 2 && body == null)
-			add(body = new GLine(MARGIN + BEAM_LENGTH, head.getY() + head.getHeight(), MARGIN + BEAM_LENGTH, head.getY()
-					+ head.getHeight() + BODY_LENGTH));
-		if (guesses.length() >= 3 && leftArm == null) {
-			GCompound arm = new GCompound();
-			arm.add(new GLine(0, 0, UPPER_ARM_LENGTH, 0));
-			arm.add(new GLine(0, 0, 0, LOWER_ARM_LENGTH));
-			arm.setLocation(MARGIN + BEAM_LENGTH - arm.getWidth(), body.getY() + ARM_OFFSET_FROM_HEAD);
-			add(leftArm = arm);
-		}
-		if (guesses.length() >= 4 && rightArm == null) {
-			GCompound arm = new GCompound();
-			arm.add(new GLine(0, 0, UPPER_ARM_LENGTH, 0));
-			arm.add(new GLine(UPPER_ARM_LENGTH, 0, UPPER_ARM_LENGTH, LOWER_ARM_LENGTH));
-			arm.setLocation(MARGIN + BEAM_LENGTH, body.getY() + ARM_OFFSET_FROM_HEAD);
-			add(leftArm = arm);
-		}
-		if (guesses.length() >= 5 && leftLeg == null) {
-			GCompound leg = new GCompound();
-			leg.add(new GLine(0, 0, HIP_WIDTH, 0));
-			leg.add(new GLine(0, 0, 0, LEG_LENGTH));
-			leg.setLocation(MARGIN + BEAM_LENGTH - leg.getWidth(), body.getY() + body.getHeight());
-			add(leftLeg = leg);
-		}
-		if (guesses.length() >= 6 && rightLeg == null) {
-			GCompound leg = new GCompound();
-			leg.add(new GLine(0, 0, HIP_WIDTH, 0));
-			leg.add(new GLine(HIP_WIDTH, 0, HIP_WIDTH, LEG_LENGTH));
-			leg.setLocation(MARGIN + BEAM_LENGTH, body.getY() + body.getHeight());
-			add(rightLeg = leg);
-		}
-		if (guesses.length() >= 7 && leftFoot == null)
-			add(leftFoot = new GLine(leftLeg.getX(), rightLeg.getY() + rightLeg.getHeight(), leftLeg.getX() - FOOT_LENGTH, rightLeg.getY()
-					+ rightLeg.getHeight()));
-		if (guesses.length() >= 8 && rightFoot == null)
-			add(leftFoot = new GLine(rightLeg.getX() + rightLeg.getWidth(), rightLeg.getY() + rightLeg.getHeight(), rightLeg.getX()
-					+ rightLeg.getWidth() + FOOT_LENGTH, rightLeg.getY() + rightLeg.getHeight()));
+		if (guesses.length() == 1)
+			body.add(buildHead());
+		if (guesses.length() == 2)
+			body.add(buildTorso());
+		if (guesses.length() == 3)
+			body.add(buildLeftArm());
+		if (guesses.length() == 4)
+			body.add(buildRightArm());
+		if (guesses.length() == 5)
+			body.add(buildLeftLeg());
+		if (guesses.length() == 6)
+			body.add(buildRightLeg());
+		if (guesses.length() == 7)
+			body.add(buildLeftFoot());
+		if (guesses.length() == 8)
+			body.add(buildRightFoot());
+	}
+
+	private GObject buildHead() {
+		return new GOval(-HEAD_RADIUS, 0, HEAD_RADIUS * 2, HEAD_RADIUS * 2);
+	}
+
+	private GObject buildTorso() {
+		return new GLine(0, HEAD_RADIUS * 2, 0, HEAD_RADIUS * 2 + BODY_LENGTH);
+	}
+
+	private GCompound buildLeftArm() {
+		GCompound arm = new GCompound();
+		arm.add(new GLine(0, 0, UPPER_ARM_LENGTH, 0));
+		arm.add(new GLine(0, 0, 0, LOWER_ARM_LENGTH));
+		arm.setLocation(-arm.getWidth(), HEAD_RADIUS * 2 + ARM_OFFSET_FROM_HEAD);
+		return arm;
+	}
+
+	private GObject buildRightArm() {
+		return hFlipGObject(hFlipGCompound(buildLeftArm()), 0);
+	}
+
+	private GCompound buildLeftLeg() {
+		GCompound leg = new GCompound();
+		leg.add(new GLine(0, 0, HIP_WIDTH, 0));
+		leg.add(new GLine(0, 0, 0, LEG_LENGTH));
+		leg.setLocation(-HIP_WIDTH, HEAD_RADIUS * 2 + BODY_LENGTH);
+		return leg;
+	}
+
+	private GObject buildRightLeg() {
+		return hFlipGObject(hFlipGCompound(buildLeftLeg()), 0);
+	}
+
+	private GObject buildLeftFoot() {
+		return new GLine(-HIP_WIDTH - FOOT_LENGTH, HEAD_RADIUS * 2 + BODY_LENGTH + LEG_LENGTH, -HIP_WIDTH, HEAD_RADIUS * 2
+				+ BODY_LENGTH + LEG_LENGTH);
+	}
+
+	private GObject buildRightFoot() {
+		return hFlipGObject(buildLeftFoot(), 0);
+	}
+
+	/* Flip a GCompound horizontally over its center. */
+	private GCompound hFlipGCompound(GCompound c) {
+		for (Iterator<GObject> i = c.iterator(); i.hasNext();)
+			hFlipGObject(i.next(), c.getWidth() / 2);
+		return c;
+	}
+
+	/* Flip an object horizontally over the given x coordinate. */
+	private GObject hFlipGObject(GObject o, double x) {
+		o.setLocation(2 * x - o.getWidth() - o.getX(), o.getY());
+		return o;
 	}
 
 	/* Constants for the simple version of the picture (in pixels) */
